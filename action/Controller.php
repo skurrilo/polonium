@@ -9,12 +9,11 @@
 namespace polonium\action;
 
 use polonium\models\Tokens;
-use lithium\action\Controller as LithiumController;
 use lithium\util\String;
 use Exception;
 use InvalidArgumentException;
 
-class Controller extends LithiumController {
+class Controller extends \lithium\action\Controller {
 
 	/**
 	 * cipher used for encryption in API
