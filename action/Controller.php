@@ -78,9 +78,9 @@ class Controller extends \lithium\action\Controller {
 
 		if($encrypted === false) {
 			$encrypted = $this->request->get('query:encrypted');
-			if($encrypted === false) {
+			if($encrypted == false) {
 				$encrypted = $this->request->get('data:encrypted');
-				if($encrypted === false) {
+				if($encrypted == false) {
 					throw new InvalidArgumentException('No encrypted data provided.');
 				}
 			}
