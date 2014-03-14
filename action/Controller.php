@@ -78,9 +78,9 @@ class Controller extends \lithium\action\Controller {
 
 		if($encrypted === false) {
 			$encrypted = $this->request->get('query:encrypted');
-			if($encrypted === false) {
+			if($encrypted == false) {
 				$encrypted = $this->request->get('data:encrypted');
-				if($encrypted === false) {
+				if($encrypted == false) {
 					throw new InvalidArgumentException('No encrypted data provided.');
 				}
 			}
@@ -110,10 +110,14 @@ class Controller extends \lithium\action\Controller {
 	}
 
 	/**
-	 * encrypt the given data-array, converted as json, using the configured cipher and the
-	 * keys from the Auth-Token
-	 * returns false, if encryption fails
+	 * sign the given data-array, converted as json, using the private key
+	 * returns false on error
+	 * return array with
+	 * - signature: base64 encoded signature
+	 * - data: json representation of signed data
 	 *
+	 * TODO: add timestamp into singed data against replay attacks
+	 * 
 	 * @param array $data
 	 * @return array
 	 * @throws InvalidArgumentException
@@ -126,25 +130,11 @@ class Controller extends \lithium\action\Controller {
 		if(is_array($data)) {
 			$data = json_encode($data);
 		}
-		// generate initialization vector and key for AES
-		$iv_length = openssl_cipher_iv_length($this->_encryption_cipher);
-		$iv = String::random($iv_length);
-		$key = String::random(32);
-
-		// encrypt data, will be automatically encoded with base64
-		$enc_data = openssl_encrypt($data, $this->_encryption_cipher, $key, false, $iv);
-		if($enc_data === false) {
+		$signature = false;
+		if(!openssl_sign($data, $signature, $this->token->private_key)) {
 			return false;
 		}
-
-		// secure random key
-		$enc_key = "";
-		if(!openssl_private_encrypt($key, $enc_key, $this->token->private_key)) {
-			return false;
-		}
-		// encode with base64 and concatenate data
-		$encrypted_data = implode(':', array(base64_encode($iv), base64_encode($enc_key), $enc_data));
-		return array('encrypted' => true, 'data' => $encrypted_data);
+		return array('signature' => base64_encode($signature), 'data' => $data);
 	}
 
 	/**
