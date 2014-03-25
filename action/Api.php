@@ -19,12 +19,22 @@ class Api {
 	 * @return string
 	 */
 	public static function mediaEncode($data, $handler, $response) {
-		$callback = $handler['request']->get('query:callback');
-		// remove all non letter/digits
-		$callback = preg_replace('/[^a-zA-Z0-9_]/','_', $callback);
-		$envelope = (boolean) $handler['request']->get('query:envelope');
+		global $request;
+		// check, if we have a request object in $handler or in global var $request
+		if(!isset($handler['request']) && !empty($request)) {
+			$handler['request'] = $request;
+			$callback = $handler['request']->get('query:callback');
+			// remove all non letter/digits
+			$callback = preg_replace('/[^a-zA-Z0-9_]/','_', $callback);
+			$envelope = (boolean) $handler['request']->get('query:envelope');
+			$fields = $handler['request']->get('query:fields');
+		}
+		else {
+			$callback = "";
+			$envelope = false;
+			$fields = false;
+		}
 
-		$fields = $handler['request']->get('query:fields');
 		if($fields != false) {
 			$response_fields = explode(',',$fields);
 			$response_data = array();
