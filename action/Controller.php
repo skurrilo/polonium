@@ -22,16 +22,6 @@ class Controller extends \lithium\action\Controller {
 	protected $_encryption_cipher = 'AES-128-CBC';
 
 	/**
-	 * TODO: remove this, when Response-Class in Lithium has http status code 429
-	 * @var array
-	 */
-	protected $_classes = array(
-		'media'    => 'lithium\net\http\Media',
-		'router'   => 'lithium\net\http\Router',
-		'response' => 'polonium\action\Response'
-	);
-
-	/**
 	 * activate type negotiation for using our own encoding defined in bootstrap.php
 	 * @var array
 	 */
