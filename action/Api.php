@@ -30,11 +30,13 @@ class Api {
 			$callback = preg_replace('/[^a-zA-Z0-9_]/','_', $callback);
 			$envelope = (boolean) $handler['request']->get('query:envelope');
 			$fields = $handler['request']->get('query:fields');
+			$version = $handler['request']->get('data:version');
 		}
 		else {
 			$callback = "";
 			$envelope = false;
 			$fields = false;
+			$version = false;
 		}
 
 		if($fields != false) {
@@ -52,6 +54,16 @@ class Api {
 			$data = array('status_code' => $response->status['code'], 'response' => $data);
 			if($response->status['code'] != 200) {
 				$response->status('code', 200);
+			}
+		}
+
+		if(!defined('MIN_CLIENT_VERSION')) {
+			define('MIN_CLIENT_VERSION', '0.0');
+		}
+		if($version) {
+			if(version_compare($version, MIN_CLIENT_VERSION, "<"))
+			{
+				$data['version_update'] = array('new_version' => MIN_CLIENT_VERSION);
 			}
 		}
 
