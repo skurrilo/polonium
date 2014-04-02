@@ -23,6 +23,8 @@ class Api {
 		// check, if we have a request object in $handler or in global var $request
 		if(!isset($handler['request']) && !empty($request)) {
 			$handler['request'] = $request;
+		}
+		if(isset($handler['request'])) {
 			$callback = $handler['request']->get('query:callback');
 			// remove all non letter/digits
 			$callback = preg_replace('/[^a-zA-Z0-9_]/','_', $callback);
