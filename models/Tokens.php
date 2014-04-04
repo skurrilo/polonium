@@ -146,6 +146,12 @@ class Tokens extends BaseModel {
 		if(empty($data['access_token'])) {
 			$data['access_token'] = String::uuid();
 		}
+		if(empty($data['slug'])) {
+			$data['slug'] = $data['access_token'];
+		}
+		if(empty($data['name'])) {
+			$data['name'] = $data['access_token'];
+		}
 		if($options['unlimited'] === true) {
 			$data['type'] = 'unlimited';
 		}
