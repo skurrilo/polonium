@@ -112,43 +112,6 @@ class Controller extends \lithium\action\Controller {
 	}
 
 	/**
-	 * sign the given data-array, converted as json, using the private key
-	 * returns false on error
-	 * return array with
-	 * - signature: base64 encoded signature
-	 * - data: json representation of signed data
-	 *
-	 * @param array $data
-	 * @return array data-array with added _current_timestamp and _signature
-	 * @throws InvalidArgumentException
-	 */
-	public function _sign($data) {
-		if($this->token == null) {
-			throw new InvalidArgumentException('Authentication missing for encryption.');
-		}
-		$data['_current_timestamp'] = time();
-
-		// sort multidimensional array by keys
-		$data = $this->_sortArrayByKey($data);
-
-		$data_string = json_encode($data);
-		$signature = false;
-		if(!openssl_sign($data_string, $signature, $this->token->private_key)) {
-			return false;
-		}
-		return array('signature' => base64_encode($signature), 'data' => $data_string);
-	}
-
-	public function _sortArrayByKey($data) {
-		foreach($data as $key => $value) {
-			if(is_array($value)) {
-				$data[$key] = $this->_sortArrayByKey($value);
-			}
-		}
-		ksort($data);
-		return $data;
-	}
-	/**
 	 * add headers for browser Authentication, if Auth fails.
 	 * @return array
 	 */
