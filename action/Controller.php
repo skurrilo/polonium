@@ -233,18 +233,10 @@ class Controller extends \lithium\action\Controller {
 			// ignore response-object from parent. will do the magic by my self.
 			parent::__invoke($request, $dispatchParams, $options);
 
-			// get data from _render array. This is the one beeing ->set() by parent::__invoke
-			$data = $this->_render['data'];
-			$this->_render['data'] = array();
-
-			// sign data
-			$data = $this->_sign($data);
-			$this->set($data);
-
 			// reset auto-rendering und render response.
 			$this->_render['auto'] = $render_auto;
 			if (!$this->_render['hasRendered'] && $this->_render['auto']) {
-				$this->render();
+				$this->render(array('token' => $this->token));
 			}
 			return $this->response;
 		}
@@ -261,7 +253,7 @@ class Controller extends \lithium\action\Controller {
 	 * @return Response
 	 */
 	protected function renderReturn($data) {
-		$this->render(compact('data'));
+		$this->render(array('data' => $data, 'token' => $this->token));
 		return $this->response;
 	}
 

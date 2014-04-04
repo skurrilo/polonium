@@ -8,6 +8,10 @@
 
 namespace polonium\action;
 
+use lithium\action\Response;
+use lithium\data\entity\Document;
+use polonium\models\Tokens;
+
 class Api {
 
 	/**
@@ -38,7 +42,14 @@ class Api {
 			$fields = false;
 			$version = false;
 		}
-
+		if(isset($handler['token']) && $handler['token'] instanceof Document && $handler['token']->model() == 'polonium\models\Tokens') {
+			$signature = true;
+			$data['_current_timestap'] = time();
+			$data = static::sortArrayByKey($data);
+		}
+		else {
+			$signature = false;
+		}
 		if($fields != false) {
 			$response_fields = explode(',',$fields);
 			$response_data = array();
@@ -76,6 +87,23 @@ class Api {
 		if($callback != false) {
 			$return = $callback.'('.$return.');';
 		}
+		if($signature) {
+			if(!openssl_sign($return, $signature, $handler['token']->private_key)) {
+				return false;
+			}
+			$response->headers('X-Signature', base64_encode($signature));
+		}
 		return $return;
 	}
+
+	public static function sortArrayByKey($data) {
+		foreach($data as $key => $value) {
+			if(is_array($value)) {
+				$data[$key] = static::sortArrayByKey($value);
+			}
+		}
+		ksort($data);
+		return $data;
+	}
+
 }
