@@ -217,7 +217,7 @@ class Controller extends \lithium\action\Controller {
 
 		// check if data needs to be decrytped
 		$action = $request->get('params:action');
-		if(!in_array($action, $this->unencrypted_actions)) {
+		if($request->is('post') && !in_array($action, $this->unencrypted_actions)) {
 			try {
 				$this->request->data = $this->_decrypt();
 			}
