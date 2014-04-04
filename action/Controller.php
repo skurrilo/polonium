@@ -8,8 +8,9 @@
 
 namespace polonium\action;
 
+use lithium\action\Response;
+use lithium\action\Request;
 use polonium\models\Tokens;
-use lithium\util\String;
 use Exception;
 use InvalidArgumentException;
 
@@ -55,6 +56,13 @@ class Controller extends \lithium\action\Controller {
 	protected $public_actions = array();
 
 	/**
+	 * disable decryption of data for these actions
+	 *
+	 * @var array
+	 */
+	protected $unencrypted_actions = array();
+
+	/**
 	 * decrypt encrypted API-Call,
 	 *
 	 * @param mixed $encrypted contains iv, encrypted key and encrypted data. if not provided, will check request for encrypted.
@@ -73,6 +81,10 @@ class Controller extends \lithium\action\Controller {
 				if($encrypted == false) {
 					throw new InvalidArgumentException('No encrypted data provided.');
 				}
+				unset($this->request->data['encrypted']);
+			}
+			else {
+				unset($this->request->query['encrypted']);
 			}
 		}
 		// separate the three parts in $encrypted
@@ -106,34 +118,44 @@ class Controller extends \lithium\action\Controller {
 	 * - signature: base64 encoded signature
 	 * - data: json representation of signed data
 	 *
-	 * TODO: add timestamp into singed data against replay attacks
-	 * 
 	 * @param array $data
-	 * @return array
+	 * @return array data-array with added _current_timestamp and _signature
 	 * @throws InvalidArgumentException
 	 */
-	public function _encrypt($data) {
+	public function _sign($data) {
 		if($this->token == null) {
 			throw new InvalidArgumentException('Authentication missing for encryption.');
 		}
-		// convert array into json
-		if(is_array($data)) {
-			$data = json_encode($data);
-		}
+		$data['_current_timestamp'] = time();
+
+		// sort multidimensional array by keys
+		$data = $this->_sortArrayByKey($data);
+
+		$data_string = json_encode($data);
 		$signature = false;
-		if(!openssl_sign($data, $signature, $this->token->private_key)) {
+		if(!openssl_sign($data_string, $signature, $this->token->private_key)) {
 			return false;
 		}
-		return array('signature' => base64_encode($signature), 'data' => $data);
+		$data['_signature'] = base64_encode($signature);
+		return $data;
 	}
 
+	public function _sortArrayByKey($data) {
+		foreach($data as $key => $value) {
+			if(is_array($value)) {
+				$data[$key] = $this->_sortArrayByKey($value);
+			}
+		}
+		ksort($data);
+		return $data;
+	}
 	/**
 	 * add headers for browser Authentication, if Auth fails.
 	 * @return array
 	 */
 	public function unauthorized() {
 		$this->response->headers('WWW-Authenticate', 'Basic realm="API"', true);
-		return $this->returnError(401, -1, 'Please Authenticate');
+		return $this->returnError(401, -2, 'Please Authenticate');
 	}
 
 	/**
@@ -171,7 +193,7 @@ class Controller extends \lithium\action\Controller {
 	 * @return Response|object
 	 */
 	public function __invoke($request, $dispatchParams, array $options = array()) {
-
+		// check for access-token and check token against limit
 		if(!in_array($request->params['action'], $this->public_actions)) {
 			$this->token = Tokens::check($this->request);
 			if($this->token === false) {
@@ -189,13 +211,43 @@ class Controller extends \lithium\action\Controller {
 
 			// is this a limited user and has exceeded his limit?
 			if($this->api_limit['type'] == 'limited' && $this->api_limit['remaining'] < 0) {
-				// HTTP status code 429 (Too many Request) is not implemented in Lithium Router and will result in 500
-				return $this->renderReturn($this->returnError(429, -1, 'Too many request in configured timeframe.'));
+				return $this->renderReturn($this->returnError(429, -4, 'Too many request in configured timeframe.'));
+			}
+		}
+
+		// check if data needs to be decrytped
+		$action = $request->get('params:action');
+		if($request->is('post') && !in_array($action, $this->unencrypted_actions)) {
+			try {
+				$this->request->data = $this->_decrypt();
+			}
+			catch (InvalidArgumentException $e) {
+				return $this->renderReturn($this->returnError(400, -3, 'Encryption required'));
 			}
 		}
 
 		try {
-			return parent::__invoke($request, $dispatchParams, $options);
+			// don' render the response, we need the data-array for signing it
+			$render_auto = $this->_render['auto'];
+			$this->_render['auto'] = false;
+
+			// ignore response-object from parent. will do the magic by my self.
+			parent::__invoke($request, $dispatchParams, $options);
+
+			// get data from _render array. This is the one beeing ->set() by parent::__invoke
+			$data = $this->_render['data'];
+			$this->_render['data'] = array();
+
+			// sign data
+			$data = $this->_sign($data);
+			$this->set($data);
+
+			// reset auto-rendering und render response.
+			$this->_render['auto'] = $render_auto;
+			if (!$this->_render['hasRendered'] && $this->_render['auto']) {
+				$this->render();
+			}
+			return $this->response;
 		}
 		catch (Exception $e) {
 			return $this->renderReturn($this->returnError(500, -1, 'Internal Server Error', $e->getMessage()));
