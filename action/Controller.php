@@ -136,8 +136,7 @@ class Controller extends \lithium\action\Controller {
 		if(!openssl_sign($data_string, $signature, $this->token->private_key)) {
 			return false;
 		}
-		$data['_signature'] = base64_encode($signature);
-		return $data;
+		return array('signature' => base64_encode($signature), 'data' => $data_string);
 	}
 
 	public function _sortArrayByKey($data) {
