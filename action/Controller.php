@@ -8,8 +8,9 @@
 
 namespace polonium\action;
 
+use lithium\action\Response;
+use lithium\action\Request;
 use polonium\models\Tokens;
-use lithium\util\String;
 use Exception;
 use InvalidArgumentException;
 
@@ -118,7 +119,7 @@ class Controller extends \lithium\action\Controller {
 	 * - data: json representation of signed data
 	 *
 	 * @param array $data
-	 * @return array
+	 * @return array data-array with added _current_timestamp and _signature
 	 * @throws InvalidArgumentException
 	 */
 	public function _sign($data) {
@@ -127,13 +128,10 @@ class Controller extends \lithium\action\Controller {
 		}
 		$data['_current_timestamp'] = time();
 
-		// sort multidimensionale array by keys
+		// sort multidimensional array by keys
 		$data = $this->_sortArrayByKey($data);
 
-		// convert array into json
-		if(is_array($data)) {
-			$data_string = json_encode($data);
-		}
+		$data_string = json_encode($data);
 		$signature = false;
 		if(!openssl_sign($data_string, $signature, $this->token->private_key)) {
 			return false;
