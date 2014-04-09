@@ -226,7 +226,10 @@ class Controller extends \lithium\action\Controller {
 		}
 
 		try {
-			// don' render the response, we need the data-array for signing it
+			// give the controller the possibility to check for params in the given data
+			$this->request->data = $this->_checkForGlobalData($this->request->data);
+
+			// don't render the response, we need the data-array for signing it
 			$render_auto = $this->_render['auto'];
 			$this->_render['auto'] = false;
 
@@ -251,6 +254,17 @@ class Controller extends \lithium\action\Controller {
 		catch (Exception $e) {
 			return $this->renderReturn($this->returnError(500, -1, 'Internal Server Error', $e->getMessage()));
 		}
+	}
+
+	/**
+	 * check the given request-data. will be called in every request before calling the action-method
+	 * returns the new data to be set in the request.
+	 *
+	 * @param $data array
+	 * @return array
+	 */
+	protected function _checkForGlobalData($data) {
+		return $data;
 	}
 
 	/**
