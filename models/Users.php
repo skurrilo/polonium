@@ -45,6 +45,7 @@ class Users extends BaseModel {
 	 * @see lithium\data\Model
 	 */
 	protected $_schema = array(
+		'username' => array('type' => 'string', 'default' => '', 'null' => false),
 		'email' => array('type' => 'string', 'default' => '', 'null' => false),
 		'password' => array('type' => 'string', 'default' => '', 'null' => false),
 		'last_ip' => array('type' => 'string', 'null' => false),
@@ -60,8 +61,8 @@ class Users extends BaseModel {
 	 * @var array
 	 */
 	public $validates = array(
-		'name' => array(
-			array('notEmpty', 'message' => 'a user id is required.'),
+		'username' => array(
+			array('notEmpty', 'message' => 'a username is required.'),
 			array(
 				'alphaNumeric',
 				'message' => 'only numbers and letters are allowed for your username.'
@@ -72,7 +73,7 @@ class Users extends BaseModel {
 					'min' => 1,
 					'max' => 250
 				),
-				'message' => 'please provide a user id.'
+				'message' => 'please provide a username.'
 			),
 			array(
 				'isUnique', 'message' => 'username already taken.',
